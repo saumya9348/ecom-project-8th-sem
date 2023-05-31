@@ -8,6 +8,8 @@ import categoryRoutes from "./routes/categoryRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import paymentRoutes from "./routes/payment.js"
 import cors from "cors";
+import path from path
+import {fileURLToPath} from "url"
 import { requireSignIn } from "./middlewares/authMiddleware.js";
 import {
   verifyPayment
@@ -19,6 +21,8 @@ dotenv.config();
 //databse config
 connectDB();
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 //rest object
 const app = express();
 
@@ -26,6 +30,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
+app.use(express.static(path.join(__dirname,"./client/build")))
 
 //routes
 app.use("/api/v1/auth", authRoutes);
@@ -35,8 +40,8 @@ app.use("/api/v1/payment",requireSignIn,paymentRoutes)
 app.post("/razorpay/webhook/payment",verifyPayment)
 
 //rest api
-app.get("/", (req, res) => {
-  res.send("<h1>Welcome to SamKart app</h1>");
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname,"./client/build/index.html"))
 });
 
 //PORT
