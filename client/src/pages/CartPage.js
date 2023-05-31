@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Layout from "./../components/Layout/Layout";
 import { useCart } from "../context/cart";
 import { useAuth } from "../context/auth";
@@ -11,12 +11,12 @@ import "../styles/CartStyles.css";
 
 const CartPage = () => {
   const [auth, setAuth] = useAuth();
-  const [cart, setCart] = useCart();
+  const [cart, setCart] = useState(JSON.parse(localStorage.getItem("cart")));
+  let cartLength = useRef(cart.length)
   const [clientToken, setClientToken] = useState("");
   const [instance, setInstance] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
   //total price
   const totalPrice = () => {
     try {
@@ -26,7 +26,7 @@ const CartPage = () => {
       });
       return total.toLocaleString("en-US", {
         style: "currency",
-        currency: "USD",
+        currency: "INR",
       });
     } catch (error) {
       console.log(error);
@@ -46,17 +46,6 @@ const CartPage = () => {
   };
 
   //get payment gateway token
-  const getToken = async () => {
-    try {
-      const { data } = await axios.get("/api/v1/product/braintree/token");
-      setClientToken(data?.clientToken);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-  useEffect(() => {
-    getToken();
-  }, [auth?.token]);
 
   //handle payments
   const handlePayment = async () => {
@@ -77,6 +66,36 @@ const CartPage = () => {
       setLoading(false);
     }
   };
+  const paymentHandler = async (e) => {
+    const API_URL = "http://localhost:8080/api/v1"
+    e.preventDefault();
+    // const orderUrl = `${API_URL}order`;
+    console.log(cart)
+    const response = await axios.post(`${API_URL}/payment/create-payment`,{"cart":cart});
+    const { data } = response;
+    const options = {
+      key: process.env.RAZOR_PAY_KEY_ID,
+      name: "SamKart",
+      description: "India's Best Online Site",
+      order_id: data.id,
+      handler: async (response) => {
+        try {
+          console.log(response)
+         const paymentId = response.razorpay_payment_id;
+         const url = `${API_URL}/payment/capture-payment/${paymentId}`;
+         const captureResponse = await axios.post(url, response)
+         console.log(captureResponse.data);
+        } catch (err) {
+          console.log(err);
+        }
+      },
+      theme: {
+        color: "#686CFD",
+      },
+    };
+    const rzp1 = new window.Razorpay(options);
+    rzp1.open();
+    };
   return (
     <Layout>
       <div className=" cart-page">
@@ -99,8 +118,8 @@ const CartPage = () => {
         <div className="container ">
           <div className="row ">
             <div className="col-md-7  p-0 m-0">
-              {cart?.map((p) => (
-                <div className="row card flex-row" key={p._id}>
+              {cart?.map((p,k) => (
+                <div className="row card flex-row" key={k}>
                   <div className="col-md-4">
                     <img
                       src={`/api/v1/product/product-photo/${p._id}`}
@@ -128,6 +147,7 @@ const CartPage = () => {
             </div>
             <div className="col-md-5 cart-summary ">
               <h2>Cart Summary</h2>
+              <button onClick={paymentHandler}>Pay Now</button>
               <p>Total | Checkout | Payment</p>
               <hr />
               <h4>Total : {totalPrice()} </h4>
@@ -144,7 +164,7 @@ const CartPage = () => {
                     </button>
                   </div>
                 </>
-              ) : (
+              ) : ( 
                 <div className="mb-3">
                   {auth?.token ? (
                     <button
@@ -168,8 +188,8 @@ const CartPage = () => {
                 </div>
               )}
               <div className="mt-2">
-                {!clientToken || !auth?.token || !cart?.length ? (
-                  ""
+                { !cart?.length < 0 ? (
+                  "" 
                 ) : (
                   <>
                     <DropIn
@@ -184,10 +204,10 @@ const CartPage = () => {
 
                     <button
                       className="btn btn-primary"
-                      onClick={handlePayment}
-                      disabled={loading || !instance || !auth?.user?.address}
+                      onClick={paymentHandler}
+                      disabled={!auth?.user?.address}
                     >
-                      {loading ? "Processing ...." : "Make Payment"}
+                       Make Payment
                     </button>
                   </>
                 )}

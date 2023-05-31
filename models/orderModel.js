@@ -13,10 +13,11 @@ const orderSchema = new mongoose.Schema(
       type: mongoose.ObjectId,
       ref: "users",
     },
+    cartValue:[],
     status: {
       type: String,
       default: "Not Process",
-      enum: ["Not Process", "Processing", "Shipped", "deliverd", "cancel"],
+      enum: ["Not Process", "Processing", "Shipped", "deliverd", "cancel", "failed"],
     },
   },
   { timestamps: true }

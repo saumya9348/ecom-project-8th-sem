@@ -29,6 +29,7 @@ const Login = () => {
           token: res.data.token,
         });
         localStorage.setItem("auth", JSON.stringify(res.data));
+        localStorage.setItem("cart",JSON.stringify([]))
         navigate(location.state || "/");
       } else {
         toast.error(res.data.message);

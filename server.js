@@ -6,7 +6,12 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoute.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
+import paymentRoutes from "./routes/payment.js"
 import cors from "cors";
+import { requireSignIn } from "./middlewares/authMiddleware.js";
+import {
+  verifyPayment
+} from "./controllers/payment.js";
 
 //configure env
 dotenv.config();
@@ -26,10 +31,12 @@ app.use(morgan("dev"));
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/category", categoryRoutes);
 app.use("/api/v1/product", productRoutes);
+app.use("/api/v1/payment",requireSignIn,paymentRoutes)
+app.post("/razorpay/webhook/payment",verifyPayment)
 
 //rest api
 app.get("/", (req, res) => {
-  res.send("<h1>Welcome to ecommerce app</h1>");
+  res.send("<h1>Welcome to SamKart app</h1>");
 });
 
 //PORT
